@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Painel de Visibilidade de OS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css" />
+<style>
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f4f3f0;
+    --bg-tertiary: #ebeae6;
+    --bg-success: #eaf3de;
+    --bg-warning: #faeeda;
+    --bg-danger: #fcebeb;
+    --text-primary: #2c2c2a;
+    --text-secondary: #5f5e5a;
+    --text-tertiary: #888780;
+    --text-success: #3b6d11;
+    --text-warning: #854f0b;
+    --text-danger: #791f1f;
+    --border-tertiary: rgba(43,43,41,0.15);
+    --border-secondary: rgba(43,43,41,0.3);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #20201e;
+      --bg-secondary: #2c2c2a;
+      --bg-tertiary: #383836;
+      --bg-success: #173404;
+      --bg-warning: #412402;
+      --bg-danger: #501313;
+      --text-primary: #f1efe8;
+      --text-secondary: #b4b2a9;
+      --text-tertiary: #888780;
+      --text-success: #c0dd97;
+      --text-warning: #fac775;
+      --text-danger: #f7c1c1;
+      --border-tertiary: rgba(255,255,255,0.15);
+      --border-secondary: rgba(255,255,255,0.3);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 24px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 500; margin: 0 0 1.25rem; }
+  select, input, textarea, button {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    border: 0.5px solid var(--border-tertiary);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 8px 10px;
+    height: 36px;
+  }
+  textarea { height: auto; }
+  button {
+    cursor: pointer;
+    background: var(--bg-primary);
+    transition: background 0.15s;
+  }
+  button:hover { background: var(--bg-secondary); }
+  button:active { transform: scale(0.98); }
+  input:focus, select:focus, textarea:focus, button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--border-secondary);
+  }
+  .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .metric-card { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 1rem; }
+  .metric-label { font-size: 13px; color: var(--text-secondary); margin: 0 0 4px; }
+  .metric-value { font-size: 24px; font-weight: 500; margin: 0; }
+  #alerts { margin-bottom: 1.25rem; }
+  .alert-block { border-radius: var(--radius-lg); padding: 0.85rem 1rem; margin-bottom: 8px; }
+  .alert-title { font-size: 13px; font-weight: 500; margin: 0 0 8px; }
+  .alert-row { display: flex; justify-content: space-between; font-size: 13px; cursor: pointer; padding: 2px 0; }
+  .os-row { display: flex; align-items: center; gap: 12px; background: var(--bg-primary); border: 0.5px solid var(--border-tertiary); border-radius: var(--radius-lg); padding: 0.85rem 1rem; margin-bottom: 8px; cursor: pointer; }
+  .dot { flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%; }
+  .row-main { flex: 1; min-width: 0; }
+  .row-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+  .row-code { font-size: 13px; font-weight: 500; }
+  .row-meta { font-size: 12px; color: var(--text-tertiary); }
+  .row-title { font-size: 14px; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { font-size: 12px; padding: 3px 10px; border-radius: var(--radius-md); white-space: nowrap; }
+  .days-label { font-size: 12px; color: var(--text-tertiary); white-space: nowrap; min-width: 60px; text-align: right; }
+  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); display: flex; align-items: flex-start; justify-content: center; padding: 24px; overflow-y: auto; z-index: 100; }
+  .modal-box { background: var(--bg-primary); border-radius: var(--radius-lg); border: 0.5px solid var(--border-tertiary); padding: 1.5rem; width: 100%; max-width: 520px; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .modal-title { font-size: 16px; font-weight: 500; margin: 0; display: flex; align-items: center; gap: 8px; }
+  .icon-btn { border: none; background: none; padding: 4px; height: auto; }
+  .field-group { display: flex; flex-direction: column; gap: 10px; }
+  .field-label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 2px; }
+  .date-row { display: flex; gap: 8px; }
+  .timeline-section { margin-top: 16px; border-top: 0.5px solid var(--border-tertiary); padding-top: 12px; }
+  .timeline-add { display: flex; gap: 8px; margin-bottom: 12px; }
+  .timeline-add input { flex: 1; }
+  .timeline-item { border-left: 2px solid var(--border-tertiary); padding-left: 10px; margin-bottom: 10px; }
+  .timeline-date { font-size: 12px; color: var(--text-tertiary); margin: 0 0 2px; }
+  .timeline-text { font-size: 13px; margin: 0; }
+  .modal-footer { display: flex; justify-content: space-between; margin-top: 18px; }
+  .danger-btn { color: var(--text-danger); border-color: var(--border-tertiary); }
+  .empty-state { font-size: 13px; color: var(--text-tertiary); text-align: center; padding: 2rem 0; }
+  select#filterCliente, select#filterFarol, select#filterBola { width: auto; }
+  #search { width: 160px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Painel de visibilidade de OS</h1>
+
+  <div class="row">
+    <div class="controls">
+      <select id="filterFarol"></select>
+      <select id="filterBola"></select>
+      <select id="filterCliente"></select>
+      <input type="text" id="search" placeholder="Buscar OS..." />
+    </div>
+    <button id="btnNew"><i class="ti ti-plus" style="font-size:16px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>Nova OS</button>
+  </div>
+
+  <div id="alerts"></div>
+  <div id="metrics" class="metrics"></div>
+  <div id="list"></div>
+</div>
+
+<div id="modalRoot"></div>
+
+<script>
+(function(){
+  var BOLA_OPTS = ["Eu","Daniel (dev)","Nilton (aprovador)","Cliente","Outro dev"];
+  var BOLA_COLOR_BG = {
+    "Eu": "#9FE1CB", "Daniel (dev)": "#B5D4F4", "Nilton (aprovador)": "#CECBF6",
+    "Cliente": "#F5C4B3", "Outro dev": "#B5D4F4"
+  };
+  var BOLA_COLOR_TEXT = {
+    "Eu": "#085041", "Daniel (dev)": "#0C447C", "Nilton (aprovador)": "#3C3489",
+    "Cliente": "#993C1D", "Outro dev": "#0C447C"
+  };
+  var CLIENTES = ["P&G","Santher","Froneri"];
+  var STATUSES = ["Backlog","Dev","QA","Homologação","Produção","Concluída"];
+  var STORE_KEY = "os_tracking_panel_v1";
+  var YELLOW_DAYS = 2;
+  var RED_DAYS = 4;
+  var items = [];
+  var editingId = null;
+
+  function uid(){ return 'os_' + Date.now() + '_' + Math.floor(Math.random()*10000); }
+  function nowISO(){ return new Date().toISOString(); }
+  function daysSince(iso){
+    if(!iso) return 0;
+    var diff = Date.now() - new Date(iso).getTime();
+    return Math.floor(diff / (1000*60*60*24));
+  }
+  function fmtDateTime(iso){
+    if(!iso) return '—';
+    var d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function farolOf(item){
+    if(item.status==='Concluída') return 'verde';
+    var d = daysSince(item.lastUpdate);
+    if(d>=RED_DAYS) return 'vermelho';
+    if(d>=YELLOW_DAYS) return 'amarelo';
+    return 'verde';
+  }
+  var FAROL_LABEL = {verde:'Em dia', amarelo:'Atenção', vermelho:'Atrasado'};
+  var FAROL_DOT = {verde:'#3B6D11', amarelo:'#854F0B', vermelho:'#791F1F'};
+  var FAROL_BG_VAR = {verde:'var(--bg-success)', amarelo:'var(--bg-warning)', vermelho:'var(--bg-danger)'};
+  var FAROL_TEXT_VAR = {verde:'var(--text-success)', amarelo:'var(--text-warning)', vermelho:'var(--text-danger)'};
+  var FAROL_ORDER = {vermelho:0, amarelo:1, verde:2};
+
+  function loadData(){
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      items = raw ? JSON.parse(raw) : [];
+    } catch(e) {
+      console.error('Erro ao carregar dados', e);
+      items = [];
+    }
+  }
+  function saveData(){
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(items));
+    } catch(e) {
+      console.error('Erro ao salvar dados', e);
+      alert('Não foi possível salvar os dados localmente.');
+    }
+  }
+
+  function populateFilters(){
+    var ff = document.getElementById('filterFarol');
+    ff.innerHTML = '<option value="">Todos os faróis</option>'+
+      '<option value="vermelho">Vermelho · Atrasado</option>'+
+      '<option value="amarelo">Amarelo · Atenção</option>'+
+      '<option value="verde">Verde · Em dia</option>';
+    var fb = document.getElementById('filterBola');
+    fb.innerHTML = '<option value="">Todas as bolas</option>' + BOLA_OPTS.map(function(b){return '<option value="'+b+'">'+b+'</option>';}).join('');
+    var fc = document.getElementById('filterCliente');
+    fc.innerHTML = '<option value="">Todos os clientes</option>' + CLIENTES.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
+  }
+
+  function getFiltered(){
+    var farol = document.getElementById('filterFarol').value;
+    var bola = document.getElementById('filterBola').value;
+    var cliente = document.getElementById('filterCliente').value;
+    var search = document.getElementById('search').value.toLowerCase();
+    return items.filter(function(i){
+      if(farol && farolOf(i)!==farol) return false;
+      if(bola && i.bola!==bola) return false;
+      if(cliente && i.cliente!==cliente) return false;
+      if(search && !((i.codigo||'').toLowerCase().indexOf(search)>-1 || (i.titulo||'').toLowerCase().indexOf(search)>-1)) return false;
+      return true;
+    });
+  }
+
+  function sortByUrgency(list){
+    return list.slice().sort(function(a,b){
+      var fa = farolOf(a), fb = farolOf(b);
+      if(FAROL_ORDER[fa]!==FAROL_ORDER[fb]) return FAROL_ORDER[fa]-FAROL_ORDER[fb];
+      return daysSince(b.lastUpdate) - daysSince(a.lastUpdate);
+    });
+  }
+
+  function renderAlerts(){
+    var red = items.filter(function(i){ return farolOf(i)==='vermelho'; });
+    var yellow = items.filter(function(i){ return farolOf(i)==='amarelo'; });
+    var el = document.getElementById('alerts');
+    if(!red.length && !yellow.length){ el.innerHTML = ''; return; }
+    var html = '';
+    if(red.length){
+      html += '<div class="alert-block" style="background:'+FAROL_BG_VAR.vermelho+';">'+
+        '<p class="alert-title" style="color:'+FAROL_TEXT_VAR.vermelho+';"><i class="ti ti-circle-filled" style="font-size:10px;vertical-align:1px;margin-right:6px;color:'+FAROL_DOT.vermelho+';" aria-hidden="true"></i>'+red.length+' OS atrasadas ('+RED_DAYS+'+ dias sem movimento)</p>';
+      red.sort(function(a,b){return daysSince(b.lastUpdate)-daysSince(a.lastUpdate);}).forEach(function(i){
+        html += '<div class="alert-row" style="color:'+FAROL_TEXT_VAR.vermelho+';" data-id="'+i.id+'">'+
+          '<span>'+(i.codigo||'—')+' · '+(i.titulo||'')+'</span>'+
+          '<span style="font-weight:500;">'+daysSince(i.lastUpdate)+'d com '+i.bola+'</span>'+
+        '</div>';
+      });
+      html += '</div>';
+    }
+    if(yellow.length){
+      html += '<div class="alert-block" style="background:'+FAROL_BG_VAR.amarelo+';">'+
+        '<p class="alert-title" style="color:'+FAROL_TEXT_VAR.amarelo+';"><i class="ti ti-circle-filled" style="font-size:10px;vertical-align:1px;margin-right:6px;color:'+FAROL_DOT.amarelo+';" aria-hidden="true"></i>'+yellow.length+' OS em atenção (podem atrasar)</p>';
+      yellow.sort(function(a,b){return daysSince(b.lastUpdate)-daysSince(a.lastUpdate);}).forEach(function(i){
+        html += '<div class="alert-row" style="color:'+FAROL_TEXT_VAR.amarelo+';" data-id="'+i.id+'">'+
+          '<span>'+(i.codigo||'—')+' · '+(i.titulo||'')+'</span>'+
+          '<span style="font-weight:500;">'+daysSince(i.lastUpdate)+'d com '+i.bola+'</span>'+
+        '</div>';
+      });
+      html += '</div>';
+    }
+    el.innerHTML = html;
+    Array.prototype.forEach.call(document.querySelectorAll('.alert-row'), function(row){
+      row.addEventListener('click', function(){ openModal(row.getAttribute('data-id')); });
+    });
+  }
+
+  function renderMetrics(){
+    var filtered = getFiltered();
+    var active = filtered.filter(function(i){return i.status!=='Concluída';});
+    var red = active.filter(function(i){return farolOf(i)==='vermelho';});
+    var yellow = active.filter(function(i){return farolOf(i)==='amarelo';});
+    var comigo = active.filter(function(i){return i.bola==='Eu';});
+    var el = document.getElementById('metrics');
+    el.innerHTML =
+      '<div class="metric-card"><p class="metric-label">OS ativas</p><p class="metric-value">'+active.length+'</p></div>'+
+      '<div class="metric-card"><p class="metric-label">Atrasadas</p><p class="metric-value" style="color:'+FAROL_TEXT_VAR.vermelho+';">'+red.length+'</p></div>'+
+      '<div class="metric-card"><p class="metric-label">Em atenção</p><p class="metric-value" style="color:'+FAROL_TEXT_VAR.amarelo+';">'+yellow.length+'</p></div>'+
+      '<div class="metric-card"><p class="metric-label">Bola comigo</p><p class="metric-value">'+comigo.length+'</p></div>';
+  }
+
+  function rowHtml(item){
+    var farol = farolOf(item);
+    var d = daysSince(item.lastUpdate);
+    var bg = BOLA_COLOR_BG[item.bola] || '#D3D1C7';
+    var tc = BOLA_COLOR_TEXT[item.bola] || '#2C2C2A';
+    return '<div class="os-row" data-id="'+item.id+'">'+
+      '<span class="dot" title="'+FAROL_LABEL[farol]+'" style="background:'+FAROL_DOT[farol]+';"></span>'+
+      '<div class="row-main">'+
+        '<div class="row-top">'+
+          '<span class="row-code">'+(item.codigo||'(sem código)')+'</span>'+
+          '<span class="row-meta">'+(item.cliente||'—')+'</span>'+
+          '<span class="row-meta">·</span>'+
+          '<span class="row-meta">'+item.status+'</span>'+
+        '</div>'+
+        '<p class="row-title">'+(item.titulo||'Sem título')+'</p>'+
+      '</div>'+
+      '<span class="badge" style="background:'+bg+';color:'+tc+';">'+item.bola+'</span>'+
+      '<span class="days-label">'+d+'d parada</span>'+
+    '</div>';
+  }
+
+  function renderList(){
+    var filtered = sortByUrgency(getFiltered());
+    var el = document.getElementById('list');
+    if(!filtered.length){
+      el.innerHTML = '<p class="empty-state">Nenhuma OS encontrada.</p>';
+      return;
+    }
+    el.innerHTML = filtered.map(rowHtml).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('.os-row'), function(row){
+      row.addEventListener('click', function(){ openModal(row.getAttribute('data-id')); });
+    });
+  }
+
+  function renderAll(){
+    populateFilters();
+    renderAlerts();
+    renderMetrics();
+    renderList();
+  }
+
+  function timelineHtml(item){
+    if(!item.eventos || !item.eventos.length){
+      return '<p class="empty-state" style="padding:0;">Sem eventos registrados ainda.</p>';
+    }
+    var ev = item.eventos.slice().reverse();
+    return ev.map(function(e){
+      return '<div class="timeline-item">'+
+        '<p class="timeline-date">'+fmtDateTime(e.data)+'</p>'+
+        '<p class="timeline-text">'+e.texto+'</p>'+
+      '</div>';
+    }).join('');
+  }
+
+  function openModal(id){
+    editingId = id || null;
+    var item = id ? items.find(function(i){return i.id===id;}) : null;
+    var isNew = !item;
+    var data = item || {codigo:'',titulo:'',cliente:CLIENTES[0],status:'Backlog',bola:'Eu',linkJira:'',eventos:[],lastUpdate:nowISO()};
+    var farol = isNew ? 'verde' : farolOf(data);
+
+    var formHtml =
+      '<div class="modal-header">'+
+        '<p class="modal-title">'+
+          (isNew?'':'<span class="dot" style="background:'+FAROL_DOT[farol]+';"></span>')+
+          (isNew?'Nova OS':'Editar OS · '+FAROL_LABEL[farol])+
+        '</p>'+
+        '<button class="icon-btn" id="closeModal" aria-label="Fechar"><i class="ti ti-x" style="font-size:18px;" aria-hidden="true"></i></button>'+
+      '</div>'+
+      '<div class="field-group">'+
+        '<input type="text" id="f_codigo" placeholder="Código da OS (ex: OS-1023)" value="'+(data.codigo||'').replace(/"/g,'&quot;')+'" />'+
+        '<input type="text" id="f_titulo" placeholder="Título / descrição resumida" value="'+(data.titulo||'').replace(/"/g,'&quot;')+'" />'+
+        '<select id="f_cliente">'+CLIENTES.map(function(c){return '<option value="'+c+'" '+(data.cliente===c?'selected':'')+'>'+c+'</option>';}).join('')+'</select>'+
+        '<select id="f_status">'+STATUSES.map(function(s){return '<option value="'+s+'" '+(data.status===s?'selected':'')+'>'+s+'</option>';}).join('')+'</select>'+
+        '<div>'+
+          '<label class="field-label">De quem é a bola agora</label>'+
+          '<select id="f_bola">'+BOLA_OPTS.map(function(b){return '<option value="'+b+'" '+(data.bola===b?'selected':'')+'>'+b+'</option>';}).join('')+'</select>'+
+        '</div>'+
+        '<input type="text" id="f_linkJira" placeholder="Link do Jira" value="'+(data.linkJira||'').replace(/"/g,'&quot;')+'" />'+
+      '</div>'+
+      '<div class="timeline-section">'+
+        '<p style="font-size:13px;font-weight:500;margin:0 0 8px;">Histórico</p>'+
+        '<div class="timeline-add">'+
+          '<input type="text" id="f_novoEvento" placeholder="Registrar decisão/cobrança/atualização..." />'+
+          '<button id="btnAddEvento" style="white-space:nowrap;">Adicionar</button>'+
+        '</div>'+
+        '<div id="timelineBox">'+timelineHtml(data)+'</div>'+
+      '</div>'+
+      '<div class="modal-footer">'+
+        (isNew? '<span></span>' : '<button class="danger-btn" id="btnDelete"><i class="ti ti-trash" style="font-size:15px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>Excluir</button>')+
+        '<button id="btnSave" style="font-weight:500;">Salvar</button>'+
+      '</div>';
+
+    document.getElementById('modalRoot').innerHTML =
+      '<div class="modal-overlay" id="modalOverlay"><div class="modal-box">'+formHtml+'</div></div>';
+
+    document.getElementById('modalOverlay').addEventListener('click', function(e){
+      if(e.target.id === 'modalOverlay') closeModal();
+    });
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('btnSave').addEventListener('click', function(){ saveItem(isNew, data); });
+    document.getElementById('btnAddEvento').addEventListener('click', function(){ addEvento(data); });
+    var delBtn = document.getElementById('btnDelete');
+    if(delBtn){ delBtn.addEventListener('click', function(){ deleteItem(item.id); }); }
+  }
+
+  function addEvento(data){
+    var input = document.getElementById('f_novoEvento');
+    var texto = input.value.trim();
+    if(!texto) return;
+    if(!data.eventos) data.eventos = [];
+    data.eventos.push({data: nowISO(), texto: texto});
+    data.lastUpdate = nowISO();
+    input.value = '';
+    document.getElementById('timelineBox').innerHTML = timelineHtml(data);
+  }
+
+  function closeModal(){
+    document.getElementById('modalRoot').innerHTML = '';
+    editingId = null;
+  }
+
+  function saveItem(isNew, data){
+    var codigo = document.getElementById('f_codigo').value.trim();
+    var titulo = document.getElementById('f_titulo').value.trim();
+    if(!codigo || !titulo){ alert('Preencha ao menos o código e o título da OS.'); return; }
+
+    var prevStatus = data.status;
+    var prevBola = data.bola;
+    var newStatus = document.getElementById('f_status').value;
+    var newBola = document.getElementById('f_bola').value;
+
+    var payload = {
+      codigo: codigo,
+      titulo: titulo,
+      cliente: document.getElementById('f_cliente').value,
+      status: newStatus,
+      bola: newBola,
+      linkJira: document.getElementById('f_linkJira').value.trim(),
+      eventos: data.eventos || [],
+      lastUpdate: data.lastUpdate || nowISO()
+    };
+
+    if(prevStatus !== newStatus){
+      payload.eventos.push({data: nowISO(), texto: 'Status alterado de "'+prevStatus+'" para "'+newStatus+'"'});
+      payload.lastUpdate = nowISO();
+    }
+    if(prevBola !== newBola){
+      payload.eventos.push({data: nowISO(), texto: 'Bola passou de "'+prevBola+'" para "'+newBola+'"'});
+      payload.lastUpdate = nowISO();
+    }
+
+    if(isNew){
+      payload.id = uid();
+      payload.lastUpdate = nowISO();
+      payload.eventos = payload.eventos.length ? payload.eventos : [{data: nowISO(), texto: 'OS criada'}];
+      items.push(payload);
+    } else {
+      var idx = items.findIndex(function(i){return i.id===editingId;});
+      payload.id = editingId;
+      items[idx] = payload;
+    }
+    saveData();
+    closeModal();
+    renderAll();
+  }
+
+  function deleteItem(id){
+    if(!confirm('Excluir esta OS? Essa ação não pode ser desfeita.')) return;
+    items = items.filter(function(i){return i.id!==id;});
+    saveData();
+    closeModal();
+    renderAll();
+  }
+
+  document.getElementById('btnNew').addEventListener('click', function(){ openModal(null); });
+  document.getElementById('filterFarol').addEventListener('change', renderAll);
+  document.getElementById('filterBola').addEventListener('change', renderAll);
+  document.getElementById('filterCliente').addEventListener('change', renderAll);
+  document.getElementById('search').addEventListener('input', renderAll);
+
+  loadData();
+  renderAll();
+})();
+</script>
+</body>
+</html>
+
+{
+  "version": 2,
+  "builds": [{ "src": "index.html", "use": "@vercel/static" }]
+}
